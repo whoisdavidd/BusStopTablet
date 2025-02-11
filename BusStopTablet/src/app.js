@@ -18,38 +18,76 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// API Key for LTA
+// API Keys
 const LTA_ACCOUNT_KEY = import.meta.env.VITE_LTA_ACCOUNT_KEY;
+const ONEMAP_TOKEN = import.meta.env.VITE_ONEMAP_TOKEN;
 
 // DOM Elements
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
 const resultsDiv = document.getElementById("results");
+const findBusesPostalCodeInput = document.getElementById("findBusesPostalCode");
+const findBusesBtn = document.getElementById("findBusesBtn");
+const nearbyBusStopsList = document.getElementById("nearbyBusStops");
 
-// Search for Bus Stops by Address or Bus Stop Code
+// Login/Register Buttons
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const loginBtn = document.getElementById("loginBtn");
+const registerBtn = document.getElementById("registerBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+// ✅ Handle User Registration
+registerBtn.addEventListener("click", async () => {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        alert("Account created! Please log in.");
+    } catch (error) {
+        console.error("Registration error:", error.message);
+    }
+});
+
+// ✅ Handle User Login
+loginBtn.addEventListener("click", async () => {
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        alert("Logged in successfully!");
+    } catch (error) {
+        console.error("Login error:", error.message);
+    }
+});
+
+// ✅ Handle Logout
+logoutBtn.addEventListener("click", async () => {
+    await signOut(auth);
+    alert("Logged out successfully!");
+});
+
+// ✅ Fetch Bus Stops by Address or Bus Stop Code
 searchBtn.addEventListener("click", async () => {
     const query = searchInput.value.trim();
     if (!query) return alert("Enter a bus stop number or address!");
 
     if (/^\d+$/.test(query)) {
-        // If the query is a bus stop code, fetch arrivals
         getBusArrivals(query);
     } else {
-        // If it's an address, search bus stops
         getBusStops(query);
     }
 });
 
-// Fetch Bus Stops by Address
+// ✅ Fetch Bus Stops by Address
 const getBusStops = async (address) => {
     const response = await fetch("https://datamall2.mytransport.sg/ltaodataservice/BusStops", {
         headers: { AccountKey: LTA_ACCOUNT_KEY }
     });
     const data = await response.json();
 
-    // Filter bus stops that match the address
-    const matchingStops = data.value.filter(busStop => 
-        busStop.Description.toLowerCase().includes(address.toLowerCase()) || 
+    const matchingStops = data.value.filter(busStop =>
+        busStop.Description.toLowerCase().includes(address.toLowerCase()) ||
         busStop.RoadName.toLowerCase().includes(address.toLowerCase())
     );
 
@@ -66,7 +104,7 @@ const getBusStops = async (address) => {
     ).join("");
 };
 
-// Fetch Bus Arrivals for a Given Bus Stop Code
+// ✅ Fetch Bus Arrivals for a Given Bus Stop Code
 const getBusArrivals = async (busStopCode) => {
     const response = await fetch(`https://datamall2.mytransport.sg/ltaodataservice/v3/BusArrival?BusStopCode=${busStopCode}`, {
         headers: { AccountKey: LTA_ACCOUNT_KEY }
@@ -81,45 +119,36 @@ const getBusArrivals = async (busStopCode) => {
     resultsDiv.innerHTML = data.Services.map(bus =>
         `<div>
             <p>Bus: ${bus.ServiceNo} | Arriving: ${bus.NextBus.EstimatedArrival}</p>
-            <button onclick="addToFavorites('${busStopCode}', '${bus.ServiceNo}')">⭐ Bookmark</button>
         </div>`
     ).join("");
 };
 
-// Add Bus to Favorites
-const addToFavorites = async (busStopId, busNumber) => {
-    const user = auth.currentUser;
-    if (!user) return alert("Please log in to save favorites!");
+// ✅ Find Buses Near Postal Code
+findBusesBtn.addEventListener("click", async () => {
+    const postalCode = findBusesPostalCodeInput.value.trim();
+    if (!postalCode) return alert("Enter a postal code!");
 
-    const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, { favorites: firebase.firestore.FieldValue.arrayUnion({ busStopId, busNumber }) }, { merge: true });
-    alert("Added to Favorites!");
-};
-const registerBtn = document.getElementById("registerBtn");
+    const coords = await getCoordinatesFromPostalCode(postalCode);
+    if (!coords) return;
 
-registerBtn.addEventListener("click", async () => {
-    const email = emailInput.value;
-    const password = passwordInput.value;
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        console.log("Registered:", userCredential.user);
-        alert("Account created! Please log in.");
-    } catch (error) {
-        console.error("Registration error:", error.message);
-    }
+    const nearbyStops = await getNearbyBusStops(coords.lat, coords.lon);
+    if (nearbyStops.length === 0) return alert("No bus stops found nearby!");
+
+    // Display Nearby Bus Stops
+    nearbyBusStopsList.innerHTML = nearbyStops.map(stop => 
+        `<li>${stop.Description} (${stop.BusStopCode}) 
+        <button onclick="getBusArrivals('${stop.BusStopCode}')">Check Bus Arrivals</button>
+        </li>`
+    ).join("");
 });
 
-const postalCodeInput = document.getElementById("postalCodeInput");
-const findBusesBtn = document.getElementById("findBusesBtn");
-const nearbyBusStopsList = document.getElementById("nearbyBusStops");
-
-// Get Coordinates from Postal Code (OneMap API)
+// ✅ Get Coordinates from Postal Code
 const getCoordinatesFromPostalCode = async (postalCode) => {
-    const response = await fetch(`https://developers.onemap.sg/commonapi/search?searchVal=${postalCode}&returnGeom=Y&getAddrDetails=Y`);
+    const response = await fetch(`https://www.onemap.gov.sg/api/common/elastic/search?searchVal=${postalCode}&returnGeom=Y&getAddrDetails=Y&pageNum=1`);
     const data = await response.json();
 
     if (data.results.length === 0) {
-        console.warn("Invalid Postal Code!");
+        alert("Invalid Postal Code!");
         return null;
     }
 
@@ -128,51 +157,28 @@ const getCoordinatesFromPostalCode = async (postalCode) => {
         lon: parseFloat(data.results[0].LONGITUDE)
     };
 };
-const getAddressFromCoordinates = async (latitude, longitude) => {
-    const accessToken = import.meta.env.VITE_ONEMAP_TOKEN; // Get token from .env
 
-    if (!accessToken) {
-        console.error("OneMap Access Token is missing. Check your .env file.");
-        return null;
-    }
-
-    const url = `https://www.onemap.gov.sg/api/public/revgeocode?location=${latitude},${longitude}&token=${accessToken}&buffer=50&addressType=All`;
-
+// ✅ Get Nearby Bus Stops (Filtering by 500m)
+const getNearbyBusStops = async () => {
     try {
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.GeocodeInfo.length > 0) {
-            console.log("Nearest Address:", data.GeocodeInfo[0].BUILDINGNAME || data.GeocodeInfo[0].ROAD);
-            return data.GeocodeInfo[0].BUILDINGNAME || data.GeocodeInfo[0].ROAD;
-        } else {
-            console.warn("No address found for these coordinates.");
-            return "No address found";
+        const response = await fetch("http://localhost:4000/api/bus-stops"); // ✅ Use Proxy
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
+
+        const data = await response.json();
+        console.log("Bus Stops Data:", data);
     } catch (error) {
-        console.error("Error fetching reverse geocode:", error);
-        return null;
+        console.error("Failed to fetch bus stops:", error);
     }
 };
-const getNearbyBusStops = async (lat, lon) => {
-    const response = await fetch("https://datamall2.mytransport.sg/ltaodataservice/BusStops", {
-        headers: { AccountKey: LTA_ACCOUNT_KEY }
-    });
-    const data = await response.json();
-    const busStops = data.value;
 
-    // Calculate distance and filter for stops within 500m
-    const nearbyStops = busStops.filter((stop) => {
-        const distance = getDistanceFromLatLonInKm(lat, lon, stop.Latitude, stop.Longitude);
-        return distance <= 0.5; // 500 meters
-    });
+// Call Function When Button is Clicked
+document.getElementById("findBusesBtn").addEventListener("click", getNearbyBusStops);
 
-    return nearbyStops;
-};
-
-// Haversine Formula to Calculate Distance Between Coordinates
+// ✅ Haversine Formula to Calculate Distance
 const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's Radius in KM
+    const R = 6371;
     const dLat = (lat2 - lat1) * (Math.PI / 180);
     const dLon = (lon2 - lon1) * (Math.PI / 180);
     const a =
@@ -184,24 +190,3 @@ const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 };
-
-// Handle "Find Buses Near Me" Button Click
-findBusesBtn.addEventListener("click", async () => {
-    const postalCode = postalCodeInput.value.trim();
-    if (!postalCode) return alert("Enter a postal code!");
-
-    const coords = await getCoordinatesFromPostalCode(postalCode);
-    if (!coords) return;
-
-    const nearbyStops = await getNearbyBusStops(coords.lat, coords.lon);
-    if (nearbyStops.length === 0) return alert("No bus stops found nearby!");
-
-    // Display Nearby Bus Stops
-    nearbyBusStopsList.innerHTML = nearbyStops.map(stop => 
-        `<li>
-            ${stop.Description} (${stop.BusStopCode}) 
-            <button onclick="getBusArrivals('${stop.BusStopCode}')">Check Bus Arrivals</button>
-        </li>`
-    ).join("");
-});
-
