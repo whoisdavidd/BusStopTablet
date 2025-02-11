@@ -1,0 +1,25 @@
+# 🛑 Ignore Environment Variables (Prevents API key leaks)
+.env
+
+# 🛑 Ignore Node Modules (Avoid committing dependencies)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# 🛑 Ignore Build Files (Vite/Next.js/React)
+dist/
+build/
+out/
+
+# 🛑 Ignore Logs
+*.log
+logs/
+debug.log
+error.log
+
+# 🛑 Ignore VS Code Settings (Optional)
+.vscode/
+.idea/
+
+# 🛑 Ignore MacOS System Files (Optional)
+.DS_Store
