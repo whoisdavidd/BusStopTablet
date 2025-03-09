@@ -1,5 +1,5 @@
 import Head from "next/head";
-import LocationButton from "./component/LocationButton";
+import BusSearch from "../component/busStopService";
 import "bootstrap/dist/css/bootstrap.min.css"; // ✅ Import Bootstrap CS
 import Link from "next/link";
 
@@ -20,7 +20,7 @@ export default function Home() {
       </Head>
 
       <nav className="navbar navbar-expand-lg navbar-light bg-light">
-        <a className="navbar-brand" href="page.js">
+        <a className="navbar-brand" href="/#">
           When Come?
         </a>
         <button
@@ -47,14 +47,9 @@ export default function Home() {
         </div>
       </nav>
 
-      <h1 className="text-center mt-4">Bus Coming?</h1>
-      <div className="container d-flex justify-content-center align-items-center">
-        <div className="row">
-            <div className="col text-center">
-            <LocationButton />
-            </div>
-            </div>
-        </div>
+      <h1 className="text-center mt-4">Bus Timing</h1>
+
+      <BusSearch />
     </div>
   );
 }

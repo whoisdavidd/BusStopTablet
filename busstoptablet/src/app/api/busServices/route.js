@@ -5,7 +5,7 @@ export async function GET(req) {
     const busNo = searchParams.get("busNo");
 
     const API_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusServices";
-    const API_KEY = process.env.LTA_ACCOUNT_KEY; // ✅ Ensure it's set correctly in .env.local
+    const API_KEY = process.env.NEXT_PUBLIC_LTA_ACCOUNT_KEY; // ✅ Ensure it's set correctly in .env.local
 
     try {
         console.log("Fetching from LTA DataMall API...");
@@ -32,6 +32,8 @@ export async function GET(req) {
         }
 
         const filteredData = busNo ? data.value.filter(bus => bus.ServiceNo === busNo) : data.value;
+        const busAPIURL = "https://datamall2.mytransport.sg/ltaodataservice/v3/BusArrival";
+        
 
         console.log("Filtered data:", filteredData);
 
@@ -41,3 +43,4 @@ export async function GET(req) {
         return NextResponse.json({ error: error.message || "Failed to fetch data" }, { status: 500 });
     }
 }
+
