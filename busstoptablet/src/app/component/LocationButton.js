@@ -1,85 +1,95 @@
 "use client";
 import { useState } from "react";
 
-export default function LocationButton() {
+export default function BusArrivalCard() {
     const [location, setLocation] = useState({ latitude: null, longitude: null });
+    const [busStops, setBusStops] = useState([]);
     const [error, setError] = useState(null);
 
+    // Function to get user's location
     const getLocation = () => {
         if (!navigator.geolocation) {
             setError("Geolocation is not supported by your browser.");
             return;
         }
-    
+
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
+                setLocation({ latitude, longitude });
 
-                try {
-                    const address = await getNearestLocation(latitude, longitude);
-                    setLocation({ latitude, longitude, address });
+                console.log("Stored location:", { latitude, longitude });
 
-                    // Store in session storage
-                    sessionStorage.setItem("userLatitude", latitude);
-                    sessionStorage.setItem("userLongitude", longitude);
-                    sessionStorage.setItem("userAddress", address);
-
-                    console.log("Stored location:", { latitude, longitude, address });
-                } catch (err) {
-                    setError("Could not fetch nearest location.");
-                }
+                // Fetch nearest bus stops from Next.js API
+                await fetchNearestBusStops(latitude, longitude);
             },
             (err) => {
                 console.error("Geolocation error:", err);
-
-                switch (err.code) {
-                    case err.PERMISSION_DENIED:
-                        setError("Location access denied. Please enable location services in your browser.");
-                        break;
-                    case err.POSITION_UNAVAILABLE:
-                        setError("Location information is unavailable.");
-                        break;
-                    case err.TIMEOUT:
-                        setError("Request timed out. Try again.");
-                        break;
-                    default:
-                        setError("An unknown error occurred.");
-                }
+                setError("Could not fetch location. Please enable location services.");
             },
             { enableHighAccuracy: true, timeout: 10000 }
         );
     };
-    const getNearestLocation = async (lat, lon) => {
-        const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY; // 🔥 Replace this with your real API key
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${API_KEY}`;
 
+    // Function to fetch nearest bus stops via Next.js API
+    const fetchNearestBusStops = async (lat, lon) => {
+        if (!lat || !lon) {
+            console.error("Latitude or Longitude is missing!");
+            setError("Could not determine location.");
+            return;
+        }
+    
+        console.log(`Sending request to /api/busStops?lat=${lat}&lon=${lon}`);
+    
         try {
-            const response = await fetch(url);
+            const response = await fetch(`/api/busStops?lat=${lat}&lon=${lon}`);
+    
+            console.log("Response Status:", response.status);
+    
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("API Error Response:", errorText);
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+    
             const data = await response.json();
-            console.log("Google Maps API Response:", data); // 🔥 Debugging
-            
-            if (data.status === "OK" && data.results.length > 0) {
-                return data.results[0].formatted_address; // Get the nearest readable address
+    
+            console.log("Nearby Bus Stops:", data);
+    
+            if (Array.isArray(data) && data.length > 0) {
+                setBusStops(data);
             } else {
-                return "Unknown location";
+                setError("No nearby bus stops found.");
             }
         } catch (error) {
-            console.error("Error fetching location:", error);
-            return "Error fetching location";
+            console.error("Error fetching bus stops:", error);
+            setError("Could not fetch nearby bus stops. Try again.");
         }
     };
 
     return (
-        <div className="text-center">
+        <div className="container text-center">
             <button type="button" className="btn btn-primary btn-lg" onClick={getLocation}>
-                Click me for location
+                Find Nearby Bus Stops
             </button>
-            {location.address && (
-                <p className="mt-3">
-                    <strong>Nearest Location: {location.address}</strong>
-                </p>
-            )}
+
             {error && <p className="mt-3 text-danger">{error}</p>}
+
+            {busStops.length > 0 && (
+                <div className="row mt-4">
+                    {busStops.map((busStop, index) => (
+                        <div key={index} className="col-md-6">
+                            <div className="card shadow-sm mb-3">
+                                <div className="card-body">
+                                    <h5 className="card-title">Bus Stop: {busStop.BusStopCode}</h5>
+                                    <p><strong>{busStop.Description}</strong> ({busStop.RoadName})</p>
+                                    <p><strong>Distance:</strong> {busStop.Distance.toFixed(2)} km</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
