@@ -34,27 +34,27 @@ export default function BusArrivalCard() {
     // Function to fetch nearest bus stops via Next.js API
     const fetchNearestBusStops = async (lat, lon) => {
         if (!lat || !lon) {
-            console.error("Latitude or Longitude is missing!");
+            console.error("❌ Latitude or Longitude is missing!");
             setError("Could not determine location.");
             return;
         }
     
-        console.log(`Sending request to /api/busStops?lat=${lat}&lon=${lon}`);
+        console.log(`🚀 Sending request to /api/busStops?lat=${lat}&lon=${lon}`);
     
         try {
             const response = await fetch(`/api/busStops?lat=${lat}&lon=${lon}`);
     
-            console.log("Response Status:", response.status);
+            console.log("📡 Response Status:", response.status);
     
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error("API Error Response:", errorText);
+                console.error("❌ API Error Response:", errorText);
                 throw new Error(`API request failed with status ${response.status}`);
             }
     
             const data = await response.json();
     
-            console.log("Nearby Bus Stops:", data);
+            console.log("🚏 Nearby Bus Stops:", data);
     
             if (Array.isArray(data) && data.length > 0) {
                 setBusStops(data);
@@ -62,7 +62,7 @@ export default function BusArrivalCard() {
                 setError("No nearby bus stops found.");
             }
         } catch (error) {
-            console.error("Error fetching bus stops:", error);
+            console.error("❌ Error fetching bus stops:", error);
             setError("Could not fetch nearby bus stops. Try again.");
         }
     };
@@ -83,7 +83,7 @@ export default function BusArrivalCard() {
                                 <div className="card-body">
                                     <h5 className="card-title">Bus Stop: {busStop.BusStopCode}</h5>
                                     <p><strong>{busStop.Description}</strong> ({busStop.RoadName})</p>
-                                    <p><strong>Distance:</strong> {busStop.Distance.toFixed(2)} km</p>
+                                    <p><strong>Distance:</strong> {busStop.Distance ? busStop.Distance.toFixed(2) + " km" : "N/A"}</p>
                                 </div>
                             </div>
                         </div>
