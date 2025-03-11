@@ -13,15 +13,17 @@ export default function BusArrivalCard() {
             return;
         }
     
-        // ✅ Force re-fetch location by calling `watchPosition`
-        navigator.geolocation.getCurrentPosition(
+        // 🚀 Use watchPosition to continuously track location updates
+        const geoWatch = navigator.geolocation.watchPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 setLocation({ latitude, longitude });
     
                 console.log("📍 Updated location:", { latitude, longitude });
     
-                // ✅ Fetch bus stops with the latest location
+                // ✅ Immediately stop watching after getting new position
+                navigator.geolocation.clearWatch(geoWatch);
+    
                 await fetchNearestBusStops(latitude, longitude);
             },
             (error) => {
@@ -41,7 +43,7 @@ export default function BusArrivalCard() {
                         setError("❗ An unknown error occurred.");
                 }
             },
-            { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 } // ✅ Forces fresh GPS data
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // ✅ Forces new GPS fetch
         );
     };
 
