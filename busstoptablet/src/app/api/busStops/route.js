@@ -97,7 +97,7 @@ export async function GET(req) {
                 Distance: isNaN(distance) ? null : parseFloat(distance.toFixed(2)),
             };
         })
-        .filter(busStop => busStop !== null && busStop.Distance !== null && busStop.Distance < 1.5)
+        .filter(busStop => busStop !== null && busStop.Distance !== null && busStop.Distance < 0.5)
         .sort((a, b) => a.Distance - b.Distance);
 
     console.log("🚏 Nearby Bus Stops Found:", nearbyBusStops.length);
