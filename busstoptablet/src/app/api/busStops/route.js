@@ -20,40 +20,34 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 // ✅ Fetch All Bus Stops from LTA API (Handles Pagination)
 const fetchAllBusStops = async () => {
-    let allBusStops = [];
-    let skip = 0;
-    const API_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusStops";
-    const API_KEY = process.env.NEXT_PUBLIC_LTA_ACCOUNT_KEY;
+  let allBusStops = [];
+  let skip = 0;
+  const API_URL = "https://datamall2.mytransport.sg/ltaodataservice/BusStops";
+  const API_KEY = process.env.NEXT_PUBLIC_LTA_ACCOUNT_KEY;
 
-    try {
-        while (true) {
-            const response = await fetch(`${API_URL}?$skip=${skip}`, {
-                headers: {
-                    "AccountKey": API_KEY,
-                    "Accept": "application/json",
-                },
-            });
+  while (true) {
+      console.log(`🔄 Fetching bus stops (Skip: ${skip})...`);
+      const response = await fetch(`${API_URL}?$skip=${skip}`, {
+          headers: {
+              "AccountKey": API_KEY,
+              "Accept": "application/json",
+          },
+      });
 
-            if (!response.ok) {
-                console.error("❌ API Request Failed:", response.status);
-                break;
-            }
+      if (!response.ok) {
+          throw new Error(`API request failed with status: ${response.status}`);
+      }
 
-            const data = await response.json();
-            if (data.value.length === 0) break; // Stop if no more results
+      const data = await response.json();
+      if (!data.value || data.value.length === 0) break; // 🚀 Stop fetching if no more results
 
-            allBusStops = [...allBusStops, ...data.value];
-            skip += 500; // Move to next batch
-        }
+      allBusStops = [...allBusStops, ...data.value];
+      skip += 500; // Move to the next batch
+  }
 
-        console.log("✅ Total Bus Stops Fetched:", allBusStops.length);
-        return allBusStops;
-    } catch (error) {
-        console.error("❌ Error fetching bus stops:", error);
-        return [];
-    }
+  console.log(`✅ Total Bus Stops Fetched: ${allBusStops.length}`);
+  return allBusStops;
 };
-
 // ✅ Main GET Route to Return Nearby Bus Stops
 export async function GET(req) {
     console.log("🚀 Incoming request to /api/busStops");
