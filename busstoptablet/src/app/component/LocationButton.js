@@ -13,17 +13,19 @@ export default function BusArrivalCard() {
             return;
         }
     
+        // ✅ Force re-fetch location by calling `watchPosition`
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 setLocation({ latitude, longitude });
     
-                console.log("Stored location:", { latitude, longitude });
+                console.log("📍 Updated location:", { latitude, longitude });
     
+                // ✅ Fetch bus stops with the latest location
                 await fetchNearestBusStops(latitude, longitude);
             },
             (error) => {
-                console.error("Geolocation error:", error);
+                console.error("❌ Geolocation error:", error);
     
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
@@ -39,22 +41,28 @@ export default function BusArrivalCard() {
                         setError("❗ An unknown error occurred.");
                 }
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // ✅ Forces fresh GPS data
         );
     };
 
     const fetchNearestBusStops = async (lat, lon) => {
+        // 🔥 Clear previous results before fetching new ones
+        setBusStops([]);
+        setError(null);
+    
+        console.log(`📡 Fetching nearby bus stops for lat=${lat}, lon=${lon}`);
+    
         try {
             const response = await fetch(`/api/busStops?lat=${lat}&lon=${lon}`);
             const data = await response.json();
-
+    
             console.log("🚏 Nearby Bus Stops:", data);
             setBusStops(data);
-
+    
             if (data.length > 0) {
                 fetchBusArrivalsForStops(data.map(stop => stop.BusStopCode));
             } else {
-                setError("No nearby bus stops found.");
+                setError("⚠️ No nearby bus stops found.");
             }
         } catch (error) {
             console.error("❌ Error fetching bus stops:", error);
@@ -81,7 +89,7 @@ export default function BusArrivalCard() {
     };
 
     return (
-        <div className="container text-center">
+        <div key={`${location.latitude}-${location.longitude}`} className="container text-center">
             <button type="button" className="btn btn-primary btn-lg" onClick={getLocation}>
                 Find Nearby Bus Stops
             </button>
