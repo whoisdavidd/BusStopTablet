@@ -41,7 +41,7 @@ export default function BusArrivalCard() {
                         setError("❗ An unknown error occurred.");
                 }
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // ✅ Forces fresh GPS data
+            { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 } // ✅ Forces fresh GPS data
         );
     };
 
