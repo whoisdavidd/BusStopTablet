@@ -12,19 +12,32 @@ export default function BusArrivalCard() {
             setError("Geolocation is not supported by your browser.");
             return;
         }
-
+    
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
                 setLocation({ latitude, longitude });
-
-                console.log("📍 Location Found:", { latitude, longitude });
-
+    
+                console.log("Stored location:", { latitude, longitude });
+    
                 await fetchNearestBusStops(latitude, longitude);
             },
-            (err) => {
-                console.error("❌ Geolocation error:", err);
-                setError("Could not fetch location. Enable location services.");
+            (error) => {
+                console.error("Geolocation error:", error);
+    
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        setError("❌ Location access denied. Enable location in browser settings.");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        setError("⚠️ Location unavailable. Try again later.");
+                        break;
+                    case error.TIMEOUT:
+                        setError("⏳ Location request timed out.");
+                        break;
+                    default:
+                        setError("❗ An unknown error occurred.");
+                }
             },
             { enableHighAccuracy: true, timeout: 10000 }
         );
