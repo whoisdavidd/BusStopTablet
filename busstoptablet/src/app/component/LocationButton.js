@@ -4,9 +4,9 @@ import { useState } from "react";
 export default function BusArrivalCard() {
     const [location, setLocation] = useState({ latitude: null, longitude: null });
     const [busStops, setBusStops] = useState([]);
+    const [busArrivals, setBusArrivals] = useState({});
     const [error, setError] = useState(null);
 
-    // Function to get user's location
     const getLocation = () => {
         if (!navigator.geolocation) {
             setError("Geolocation is not supported by your browser.");
@@ -18,52 +18,52 @@ export default function BusArrivalCard() {
                 const { latitude, longitude } = position.coords;
                 setLocation({ latitude, longitude });
 
-                console.log("Stored location:", { latitude, longitude });
+                console.log("📍 Location Found:", { latitude, longitude });
 
-                // Fetch nearest bus stops from Next.js API
                 await fetchNearestBusStops(latitude, longitude);
             },
             (err) => {
-                console.error("Geolocation error:", err);
-                setError("Could not fetch location. Please enable location services.");
+                console.error("❌ Geolocation error:", err);
+                setError("Could not fetch location. Enable location services.");
             },
             { enableHighAccuracy: true, timeout: 10000 }
         );
     };
 
-    // Function to fetch nearest bus stops via Next.js API
     const fetchNearestBusStops = async (lat, lon) => {
-        if (!lat || !lon) {
-            console.error("❌ Latitude or Longitude is missing!");
-            setError("Could not determine location.");
-            return;
-        }
-    
-        console.log(`🚀 Sending request to /api/busStops?lat=${lat}&lon=${lon}`);
-    
         try {
             const response = await fetch(`/api/busStops?lat=${lat}&lon=${lon}`);
-    
-            console.log("📡 Response Status:", response.status);
-    
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("❌ API Error Response:", errorText);
-                throw new Error(`API request failed with status ${response.status}`);
-            }
-    
             const data = await response.json();
-    
+
             console.log("🚏 Nearby Bus Stops:", data);
-    
-            if (Array.isArray(data) && data.length > 0) {
-                setBusStops(data);
+            setBusStops(data);
+
+            if (data.length > 0) {
+                fetchBusArrivalsForStops(data.map(stop => stop.BusStopCode));
             } else {
                 setError("No nearby bus stops found.");
             }
         } catch (error) {
             console.error("❌ Error fetching bus stops:", error);
-            setError("Could not fetch nearby bus stops. Try again.");
+            setError("Could not fetch nearby bus stops.");
+        }
+    };
+
+    const fetchBusArrivalsForStops = async (busStopCodes) => {
+        try {
+            const arrivalsData = {};
+
+            for (const busStopCode of busStopCodes) {
+                const response = await fetch(`/api/busArrivals?busStopCode=${busStopCode}`);
+                const data = await response.json();
+                arrivalsData[busStopCode] = data;
+            }
+
+            console.log("🚌 Bus Arrivals:", arrivalsData);
+            setBusArrivals(arrivalsData);
+        } catch (error) {
+            console.error("❌ Error fetching bus arrivals:", error);
+            setError("Could not fetch bus arrival data.");
         }
     };
 
@@ -78,12 +78,26 @@ export default function BusArrivalCard() {
             {busStops.length > 0 && (
                 <div className="row mt-4">
                     {busStops.map((busStop, index) => (
-                        <div key={index} className="col-md-6">
-                            <div className="card shadow-sm mb-3">
+                        <div key={index} className="col-md-6 d-flex align-items-stretch">
+                            <div className="card border-0 shadow-lg mb-4 w-100" style={{ borderRadius: "12px" }}>
                                 <div className="card-body">
-                                    <h5 className="card-title">Bus Stop: {busStop.BusStopCode}</h5>
+                                    <h5 className="card-title">🚏 Bus Stop: {busStop.BusStopCode}</h5>
                                     <p><strong>{busStop.Description}</strong> ({busStop.RoadName})</p>
-                                    <p><strong>Distance:</strong> {busStop.Distance ? busStop.Distance.toFixed(2) + " km" : "N/A"}</p>
+                                    <p><strong>Distance:</strong> {busStop.Distance.toFixed(2)} km</p>
+
+                                    {busArrivals[busStop.BusStopCode] ? (
+                                        <div>
+                                            <h6>🚌 Incoming Buses:</h6>
+                                            {busArrivals[busStop.BusStopCode].map((bus, i) => (
+                                                <p key={i}>
+                                                    <strong>Bus {bus.ServiceNo}:</strong> 
+                                                    {" "} {bus.NextBus} - {bus.Load}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p>⏳ Loading bus arrival times...</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
