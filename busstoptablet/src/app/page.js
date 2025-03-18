@@ -2,12 +2,21 @@ import Head from "next/head";
 import LocationButton from "./component/LocationButton";
 import "bootstrap/dist/css/bootstrap.min.css"; // ✅ Import Bootstrap CS
 import Link from "next/link";
+import { useEffect } from "react";
 
 <Link href="/busTiming">
   <a className="nav-link">Bus Timing</a>
 </Link>;
 
 export default function Home() {
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Reload the page
+      window.location.reload();
+    }, 300000); // Refresh every 30 seconds (adjust as needed)
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
   return (
     <div>
       <Head>
