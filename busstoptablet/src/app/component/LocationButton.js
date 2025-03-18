@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function BusArrivalCard() {
     const [location, setLocation] = useState({ latitude: null, longitude: null });
@@ -89,6 +89,18 @@ export default function BusArrivalCard() {
             setError("Could not fetch bus arrival data.");
         }
     };
+    useEffect(() => {
+        // Trigger immediately on load
+        getLocation();
+
+        const interval = setInterval(() => {
+            console.log("🔄 Auto-refreshing location & bus arrivals...");
+            getLocation();
+        }, 60000); // 60,000 ms = 1 minute
+
+        return () => clearInterval(interval); // Cleanup interval on component unmount
+    }, []);
+
 
     return (
         <div key={`${location.latitude}-${location.longitude}`} className="container text-center">
