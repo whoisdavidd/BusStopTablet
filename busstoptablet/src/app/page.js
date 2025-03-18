@@ -1,3 +1,4 @@
+"use client";
 import Head from "next/head";
 import LocationButton from "./component/LocationButton";
 import "bootstrap/dist/css/bootstrap.min.css"; // ✅ Import Bootstrap CS
