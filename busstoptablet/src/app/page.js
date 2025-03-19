@@ -5,9 +5,9 @@ import "bootstrap/dist/css/bootstrap.min.css"; // ✅ Import Bootstrap CS
 import Link from "next/link";
 import { useEffect } from "react";
 
-<Link href="/busTiming">
+{/* <Link href="/busTiming">
   <a className="nav-link">Bus Timing</a>
-</Link>;
+</Link>; */}
 
 export default function Home() {
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function Home() {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav">
             <li className="nav-item">
-              <Link href="/busTiming">Bus Timing</Link>
+              <a href="/busTiming">Bus Timing</a>
             </li>
           </ul>
           <ul className="navbar-nav ms-auto">

@@ -126,7 +126,7 @@ export default function BusArrivalCard() {
                                             {busArrivals[busStop.BusStopCode].map((bus, i) => (
                                                 <p key={i}>
                                                     <strong>Bus {bus.ServiceNo}:</strong> 
-                                                    {" "} {bus.NextBus} - {bus.Load}
+                                                    {" "} {bus.NextBus}
                                                 </p>
                                             ))}
                                         </div>

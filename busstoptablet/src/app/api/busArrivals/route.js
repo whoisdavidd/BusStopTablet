@@ -34,7 +34,7 @@ const fetchBusArrivals = async (busStopCode, apiKey) => {
         return data.Services.map(service => ({
             ServiceNo: service.ServiceNo,
             NextBus: getMinutesUntilArrival(service.NextBus.EstimatedArrival),
-            Load: service.NextBus.Load,
+            // Load: service.NextBus.Load,
             Feature: service.NextBus.Feature || "N/A",
             Type: service.NextBus.Type,
         }));
