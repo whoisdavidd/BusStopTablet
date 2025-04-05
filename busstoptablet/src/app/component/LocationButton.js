@@ -75,13 +75,15 @@ export default function BusArrivalCard() {
     const fetchBusArrivalsForStops = async (busStopCodes) => {
         try {
             const arrivalsData = {};
-
-            for (const busStopCode of busStopCodes) {
+    
+            const fetchPromises = busStopCodes.map(async (busStopCode) => {
                 const response = await fetch(`/api/busArrivals?busStopCode=${busStopCode}`);
                 const data = await response.json();
                 arrivalsData[busStopCode] = data;
-            }
-
+            });
+    
+            await Promise.all(fetchPromises);
+    
             console.log("🚌 Bus Arrivals:", arrivalsData);
             setBusArrivals(arrivalsData);
         } catch (error) {
@@ -96,7 +98,7 @@ export default function BusArrivalCard() {
         const interval = setInterval(() => {
             console.log("🔄 Auto-refreshing location & bus arrivals...");
             getLocation();
-        }, 60000); // 60,000 ms = 1 minute
+        }, 30000); // 60,000 ms = 1 minute
 
         return () => clearInterval(interval); // Cleanup interval on component unmount
     }, []);
